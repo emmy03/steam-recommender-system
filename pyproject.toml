@@ -1,0 +1,25 @@
+[project]
+name = "steam-recommender-system"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "certifi==2026.6.17",
+    "charset-normalizer==3.4.7",
+    "idna==3.18",
+    "joblib==1.5.3",
+    "narwhals==2.22.1",
+    "numpy==2.5.0",
+    "pandas==3.0.3",
+    "python-dateutil==2.9.0.post0",
+    "python-dotenv==1.2.2",
+    "requests==2.34.2",
+    "ruff>=0.15.20",
+    "scikit-learn==1.9.0",
+    "scipy==1.18.0",
+    "six==1.17.0",
+    "threadpoolctl==3.6.0",
+    "tzdata==2026.2",
+    "urllib3==2.7.0",
+]
