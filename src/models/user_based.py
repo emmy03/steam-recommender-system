@@ -3,9 +3,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from src.config import DATA_PATH, MON_STEAM_ID, TOP_N
 from src.models.data_utils import prepare_data
 
-# --- FONCTIONS DU MODÈLE ---
-
-
+# --- FONCTIONS DU MODELE ---
 def build_user_similarity(matrice_interaction):
     """
     Calcule la matrice de similarité cosinus entre les joueurs (User-Based).
@@ -70,7 +68,7 @@ def get_user_recommendations(user_id, matrice_interaction, df_sim_users, TOP_N):
     return top_jeux
 
 
-# --- POINT D'ENTRÉE (TEST LOCAL) ---
+# --- POINT D'ENTREE (TEST LOCAL) ---
 if __name__ == "__main__":
     print("Chargement des données via l'utilitaire partagé...")
     matrice_inter = prepare_data(DATA_PATH)
