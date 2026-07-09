@@ -1,11 +1,11 @@
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-from src.config import DATA_PATH, MON_STEAM_ID, TOP_N
+from src.config import DATA_PATH, MON_STEAM_ID, TOP_N, SIMILARITY_METRIC
 from src.models.data_utils import prepare_data
 
 
 # --- FONCTIONS DU MODELE ---
-def build_item_similarity(matrice_interaction):
+def build_item_similarity(matrice_interaction, metric=SIMILARITY_METRIC):
     """
     Calcule la matrice de similarité cosinus entre les jeux (Item-Based).
 
@@ -15,17 +15,22 @@ def build_item_similarity(matrice_interaction):
     Returns:
         df_sim_items (pd.DataFrame): Une matrice carrée de similarité (lignes = jeux, colonnes = jeux).
     """
-    # 1. Transposition : les jeux deviennent les lignes (le coeur de l'Item-Based)
-    matrice_items = matrice_interaction.T
+    if metric == "cosine":
+        # 1. Transposition : les jeux deviennent les lignes (le coeur de l'Item-Based)
+        matrice_items = matrice_interaction.T
 
-    # 2. Calcul vectoriel ultra-rapide avec Scikit-Learn
-    matrice_sim = cosine_similarity(matrice_items)
+        # 2. Calcul vectoriel ultra-rapide avec Scikit-Learn
+        matrice_sim = cosine_similarity(matrice_items)
 
-    # 3. Reformatage en DataFrame pour conserver les identifiants (game_id)
-    df_sim_items = pd.DataFrame(
-        matrice_sim, index=matrice_items.index, columns=matrice_items.index
-    )
-    return df_sim_items
+        # 3. Reformatage en DataFrame pour conserver les identifiants (game_id)
+        df_sim_items = pd.DataFrame(
+            matrice_sim, index=matrice_items.index, columns=matrice_items.index
+        )
+        return df_sim_items
+    elif metric == "pearson":
+        return matrice_interaction.corr(method="pearson")
+    else:
+        return ValueError(f"Métrique non supportée : {metric}")
 
 
 def get_item_recommendations(user_id, matrice_interaction, df_sim_items, TOP_N):
@@ -83,7 +88,9 @@ if __name__ == "__main__":
     print("Matrice générée avec succès !")
 
     print("\nRecherche de jeux similaires à tes jeux préférés...")
-    recommandations = get_item_recommendations(MON_STEAM_ID, matrice_inter, matrice_sim)
+    recommandations = get_item_recommendations(
+        MON_STEAM_ID, matrice_inter, matrice_sim, TOP_N
+    )
 
     print(
         f"\nTon Top {len(recommandations)} des recommandations (Approche Item-Based) :"

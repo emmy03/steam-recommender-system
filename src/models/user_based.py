@@ -1,10 +1,11 @@
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-from src.config import DATA_PATH, MON_STEAM_ID, TOP_N
+from src.config import DATA_PATH, MON_STEAM_ID, TOP_N, SIMILARITY_METRIC
 from src.models.data_utils import prepare_data
 
+
 # --- FONCTIONS DU MODELE ---
-def build_user_similarity(matrice_interaction):
+def build_user_similarity(matrice_interaction, metric=SIMILARITY_METRIC):
     """
     Calcule la matrice de similarité cosinus entre les joueurs (User-Based).
 
@@ -14,14 +15,23 @@ def build_user_similarity(matrice_interaction):
     Returns:
         pd.DataFrame: Une matrice carrée de similarité (lignes = joueurs, colonnes = joueurs).
     """
-    # Calcul direct et optimisé sur les lignes (les joueurs)
-    matrice_sim = cosine_similarity(matrice_interaction)
+    if metric == "cosine":
+        # Calcul direct et optimisé sur les lignes (les joueurs)
+        matrice_sim = cosine_similarity(matrice_interaction)
 
-    # Reformatage en DataFrame pour conserver les identifiants (user_id)
-    df_sim_users = pd.DataFrame(
-        matrice_sim, index=matrice_interaction.index, columns=matrice_interaction.index
-    )
-    return df_sim_users
+        # Reformatage en DataFrame pour conserver les identifiants (user_id)
+        df_sim_users = pd.DataFrame(
+            matrice_sim,
+            index=matrice_interaction.index,
+            columns=matrice_interaction.index,
+        )
+        return df_sim_users
+    elif metric == "pearson":
+        # .corr() calcule la corrélation entre les colonnes.
+        # On transpose (.T) pour que les joueurs deviennent les colonnes.
+        return matrice_interaction.T.corr(method="pearson")
+    else:
+        return ValueError(f"Métrique non supportée : {metric}")
 
 
 def get_user_recommendations(user_id, matrice_interaction, df_sim_users, TOP_N):
