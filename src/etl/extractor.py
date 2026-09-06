@@ -1,7 +1,7 @@
 import os
 import requests
 import pandas as pd
-from src.config import API_KEY, MON_STEAM_ID, MAX_USERS
+from src.config import STEAM_API_KEY, MON_STEAM_ID, MAX_USERS
 
 
 # --- FONCTIONS API ---
@@ -16,7 +16,7 @@ def get_friends(steam_id):
         list: Une liste de SteamIDs (str), ou une liste vide si le profil est privé/inaccessible.
     """
     url = "http://api.steampowered.com/ISteamUser/GetFriendList/v0001/"
-    params = {"key": API_KEY, "steamid": steam_id, "relationship": "friend"}
+    params = {"key": STEAM_API_KEY, "steamid": steam_id, "relationship": "friend"}
     response = requests.get(url, params=params)
 
     if response.status_code == 200:
@@ -41,7 +41,7 @@ def get_owned_games(steam_id):
     """
     url = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/"
     params = {
-        "key": API_KEY,
+        "key": STEAM_API_KEY,
         "steamid": steam_id,
         "format": "json",
         "include_played_free_games": "1",  # inclut les Free-to-play et les jeux issus du partage familial
