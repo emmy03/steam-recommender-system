@@ -33,7 +33,7 @@ def build_item_similarity(matrice_interaction, metric=SIMILARITY_METRIC):
         return ValueError(f"Métrique non supportée : {metric}")
 
 
-def get_item_recommendations(user_id, matrice_interaction, df_sim_items, TOP_N):
+def get_item_recommendations(user_id, matrice_interaction, df_sim_items, top_n):
     """
     Génère des recommandations pour un utilisateur basé sur ses jeux joués
     et la similarité mathématique entre les items.
@@ -72,7 +72,7 @@ def get_item_recommendations(user_id, matrice_interaction, df_sim_items, TOP_N):
 
     # Tri décroissant selon le score final et sélection du Top N
     top_jeux = sorted(scores_recommandation.items(), key=lambda x: x[1], reverse=True)[
-        :TOP_N
+        :top_n
     ]
     return top_jeux
 

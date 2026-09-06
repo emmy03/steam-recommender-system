@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def prepare_data(file_path):
     """
     Charge les données brutes et construit la matrice d'intéraction Utilisateur-Jeu.

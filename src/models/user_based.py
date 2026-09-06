@@ -34,7 +34,7 @@ def build_user_similarity(matrice_interaction, metric=SIMILARITY_METRIC):
         return ValueError(f"Métrique non supportée : {metric}")
 
 
-def get_user_recommendations(user_id, matrice_interaction, df_sim_users, TOP_N):
+def get_user_recommendations(user_id, matrice_interaction, df_sim_users, top_n):
     """
     Génère des recommandations en se basant sur les bibliothèques des joueurs similaires.
 
@@ -73,7 +73,7 @@ def get_user_recommendations(user_id, matrice_interaction, df_sim_users, TOP_N):
                 scores_recommandation[game_id] += playtime * score_similarite
 
     top_jeux = sorted(scores_recommandation.items(), key=lambda x: x[1], reverse=True)[
-        :TOP_N
+        :top_n
     ]
     return top_jeux
 
@@ -100,3 +100,4 @@ if __name__ == "__main__":
     for game_id, score in recommandations:
         print(f"- AppID {game_id} | Score de pertinence : {round(score, 2)}")
         print(f"  Lien : https://store.steampowered.com/app/{game_id}\n")
+ 
