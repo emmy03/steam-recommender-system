@@ -1,10 +1,33 @@
 import os
+import time
 import requests
 import pandas as pd
 from src.config import STEAM_API_KEY, MON_STEAM_ID, MAX_USERS
 
+REQUEST_DELAY = 1.0
+
 
 # --- FONCTIONS API ---
+def _call_steam_api(url, params, max_retries=3):
+    """
+    Appelle l'API Steam avec une gestion basique du rate-limit (HTTP 429) :
+    backoff exponentiel entre les tentatives.
+    """
+    response = None
+    for tentative in range(max_retries):
+        response = requests.get(url, params=params)
+
+        if response.status_code == 200:
+            return response
+
+        if response.status_code == 429:
+            attente = REQUEST_DELAY * (2 ** tentative)
+            print(f"Rate-limit Steam atteint, nouvelle tentative dans {attente: .1f}s...")
+            time.sleep(attente)
+            continue
+
+        break
+
 def get_friends(steam_id):
     """
     Interroge l'API Steam pour récupérer le réseau d'amis d'un joueur.
@@ -109,6 +132,8 @@ def run_extraction(start_id, MAX_USERS):
             print(
                 f"[{len(utilisateurs_visites)}/{MAX_USERS}] Profil privé ou vide ignoré."
             )
+
+        time.sleep(REQUEST_DELAY)
 
     # Etape de chargement (load) : sauvegarde dans un fichier plat
     df = pd.DataFrame(dataset)
