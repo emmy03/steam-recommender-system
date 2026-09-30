@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from src.config import DATA_PATH, MON_STEAM_ID, TOP_N, SIMILARITY_METRIC
@@ -5,12 +6,14 @@ from src.models.data_utils import prepare_data
 
 
 # --- FONCTIONS DU MODELE ---
-def build_user_similarity(matrice_interaction, metric=SIMILARITY_METRIC):
+def build_user_similarity(matrice_interaction, metric=SIMILARITY_METRIC, min_periods=5):
     """
     Calcule la matrice de similarité cosinus entre les joueurs (User-Based).
 
     Args:
         matrice_interaction (pd.DataFrame): La matrice d'interaction Utilisateur-Jeu.
+        metric (str): "cosine" ou "pearson".
+        min_periods (int): Nombre minimum d'observations communes pour Pearson.
 
     Returns:
         pd.DataFrame: Une matrice carrée de similarité (lignes = joueurs, colonnes = joueurs).
@@ -29,7 +32,11 @@ def build_user_similarity(matrice_interaction, metric=SIMILARITY_METRIC):
     elif metric == "pearson":
         # .corr() calcule la corrélation entre les colonnes.
         # On transpose (.T) pour que les joueurs deviennent les colonnes.
-        return matrice_interaction.T.corr(method="pearson")
+        # Les 0 en NaN pour ne comparer que sur les jeux réellement communs.
+        matrice_masquee = matrice_interaction.T.replace(0, np.nan)
+        df_sim_users = matrice_masquee.corr(method="pearson", min_periods=min_periods)
+
+        return df_sim_users.fillna(0.0)
     else:
         return ValueError(f"Métrique non supportée : {metric}")
 
@@ -100,4 +107,3 @@ if __name__ == "__main__":
     for game_id, score in recommandations:
         print(f"- AppID {game_id} | Score de pertinence : {round(score, 2)}")
         print(f"  Lien : https://store.steampowered.com/app/{game_id}\n")
- 

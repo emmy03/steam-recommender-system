@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from src.config import DATA_PATH, MON_STEAM_ID, TOP_N, SIMILARITY_METRIC
@@ -5,12 +6,14 @@ from src.models.data_utils import prepare_data
 
 
 # --- FONCTIONS DU MODELE ---
-def build_item_similarity(matrice_interaction, metric=SIMILARITY_METRIC):
+def build_item_similarity(matrice_interaction, metric=SIMILARITY_METRIC, min_periods=5):
     """
     Calcule la matrice de similarité cosinus entre les jeux (Item-Based).
 
     Args:
         matrice_interaction (pd.DataFrame): La matrice d'interaction Utilisateur-Jeu.
+        metric (str): "cosine" ou "pearson".
+        min_periods (int): Nombre minimum d'observation communes pour Pearson.
 
     Returns:
         df_sim_items (pd.DataFrame): Une matrice carrée de similarité (lignes = jeux, colonnes = jeux).
@@ -28,7 +31,11 @@ def build_item_similarity(matrice_interaction, metric=SIMILARITY_METRIC):
         )
         return df_sim_items
     elif metric == "pearson":
-        return matrice_interaction.corr(method="pearson")
+        # On masque les 0 en NaN : la corrélation ne portera que sur les
+        # joueurs ayant réellement noté les deux jeux comparés
+        matrice_masquee = matrice_interaction.replace(0, np.nan)
+        df_sim_items = matrice_masquee.corr(method="pearson", min_periods=min_periods)
+        return df_sim_items.fillna(0.0)
     else:
         return ValueError(f"Métrique non supportée : {metric}")
 
