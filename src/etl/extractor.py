@@ -21,12 +21,15 @@ def _call_steam_api(url, params, max_retries=3):
             return response
 
         if response.status_code == 429:
-            attente = REQUEST_DELAY * (2 ** tentative)
-            print(f"Rate-limit Steam atteint, nouvelle tentative dans {attente: .1f}s...")
+            attente = REQUEST_DELAY * (2**tentative)
+            print(
+                f"Rate-limit Steam atteint, nouvelle tentative dans {attente: .1f}s..."
+            )
             time.sleep(attente)
             continue
 
         break
+
 
 def get_friends(steam_id):
     """

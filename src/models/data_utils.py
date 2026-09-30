@@ -21,6 +21,7 @@ def prepare_data(file_path):
     )
     return matrice_interaction
 
+
 def convert_playtime_to_rating(hours):
     """
     Transforme le temps de jeu en une note de 1 à 5.
@@ -28,13 +29,13 @@ def convert_playtime_to_rating(hours):
     """
     if hours <= 0:
         return 0
-    elif hours < 2:   # Testé rapidement
+    elif hours < 2:  # Testé rapidement
         return 1
     elif hours < 10:  # Un peu joué
         return 2
     elif hours < 30:  # Fini la trame principale
         return 3
-    elif hours < 100: # Beaucoup investi
+    elif hours < 100:  # Beaucoup investi
         return 4
-    else:             # Hardcore fan (> 100h)
+    else:  # Hardcore fan (> 100h)
         return 5
