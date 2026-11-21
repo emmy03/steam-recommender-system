@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-from src.config import DATA_PATH, MON_STEAM_ID, TOP_N, SIMILARITY_METRIC
+
+from src.config import DATA_PATH, MON_STEAM_ID, SIMILARITY_METRIC, TOP_N
 from src.models.data_utils import prepare_data
 
 
@@ -38,10 +39,12 @@ def build_user_similarity(matrice_interaction, metric=SIMILARITY_METRIC, min_per
 
         return df_sim_users.fillna(0.0)
     else:
-        return ValueError(f"Métrique non supportée : {metric}")
+        raise ValueError(f"Métrique non supportée : {metric}")
 
 
-def get_user_recommendations(user_id, matrice_interaction, df_sim_users, top_n):
+def get_user_recommendations(
+    user_id, matrice_interaction, df_sim_users, top_n, owned_games=None
+):
     """
     Génère des recommandations en se basant sur les bibliothèques des joueurs similaires.
 
@@ -65,6 +68,8 @@ def get_user_recommendations(user_id, matrice_interaction, df_sim_users, top_n):
     # 2. Identifier les jeux déjà possédés pour ne pas les recommander
     mes_jeux = matrice_interaction.loc[user_id]
     jeux_deja_joues = set(mes_jeux[mes_jeux > 0].index)
+
+    jeux_deja_joues.update(owned_games or ())
 
     scores_recommandation = {}
 

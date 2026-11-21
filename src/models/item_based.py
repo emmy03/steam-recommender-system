@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-from src.config import DATA_PATH, MON_STEAM_ID, TOP_N, SIMILARITY_METRIC
+
+from src.config import DATA_PATH, MON_STEAM_ID, SIMILARITY_METRIC, TOP_N
 from src.models.data_utils import prepare_data
 
 
@@ -37,10 +38,12 @@ def build_item_similarity(matrice_interaction, metric=SIMILARITY_METRIC, min_per
         df_sim_items = matrice_masquee.corr(method="pearson", min_periods=min_periods)
         return df_sim_items.fillna(0.0)
     else:
-        return ValueError(f"Métrique non supportée : {metric}")
+        raise ValueError(f"Métrique non supportée : {metric}")
 
 
-def get_item_recommendations(user_id, matrice_interaction, df_sim_items, top_n):
+def get_item_recommendations(
+    user_id, matrice_interaction, df_sim_items, top_n, owned_games=None
+):
     """
     Génère des recommandations pour un utilisateur basé sur ses jeux joués
     et la similarité mathématique entre les items.
@@ -59,6 +62,9 @@ def get_item_recommendations(user_id, matrice_interaction, df_sim_items, top_n):
     # print("Utilisateur introuvable dans la base de données.")
     # return []
 
+    if user_id not in matrice_interaction.index:
+        return []
+    excluded = set(owned_games or ())
     mes_jeux = matrice_interaction.loc[user_id]
     mes_jeux_joues = mes_jeux[mes_jeux > 0]
 
@@ -70,7 +76,7 @@ def get_item_recommendations(user_id, matrice_interaction, df_sim_items, top_n):
 
         for sim_game_id, score_sim in jeux_similaires.items():
             # Exclusion des jeux déjà joués et de la similarité du jeu avec lui-même
-            if sim_game_id != game_id and mes_jeux[sim_game_id] == 0:
+            if sim_game_id not in excluded and mes_jeux[sim_game_id] == 0:
                 if sim_game_id not in scores_recommandation:
                     scores_recommandation[sim_game_id] = 0
 

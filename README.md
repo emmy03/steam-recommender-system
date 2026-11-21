@@ -9,7 +9,7 @@ Système de recommandation de jeux vidéo Steam, construit à partir de vraies d
 ### 1. Extraction des données (`src/etl/extractor.py`)
 - Parcours en largeur (BFS) du graphe social Steam à partir d'un `SteamID` de départ, en suivant les listes d'amis.
 - Récupération des bibliothèques de jeux (`GetOwnedGames`) et du réseau social (`GetFriendList`) via l'API Steam Web.
-- Filtrage des profils privés et des jeux jamais lancés (bruit statistique).
+- Conservation des jeux jamais lancés pour identifier la bibliothèque complète.
 - Export en CSV (`data/steam_raw_data.csv`) : `user_id`, `game_id`, `playtime_minutes`.
 
 ### 2. Préparation des données (`src/models/data_utils.py`)
@@ -52,11 +52,11 @@ Pour l'instant, les scripts fonctionnent de manière autonome.
 
 ```bash
 # 1. Extraire les données (bibliothèques + réseau d'amis)
-uv run -m src.etl.extractor.py
+uv run python -m src.etl.extractor
 
 # 2. Tester un modèle de recommandation individuellement
-uv run -m src.models.user_based.py
-uv run -m src.models.item_based.py
+uv run python main.py
+uv run python -m unittest discover -s tests -v
 ```
 
 ---
@@ -84,7 +84,7 @@ Le projet évolue activement ! Voici ce qui tourne déjà en local et sera push�
 
 - [x] **Moteur Hybride :** Combinaison User-Based et Item-Based via une moyenne pondérée normalisée (Min-Max).
 
-- [x] **Moteur SVD (Facteurs Latents) :** Factorisation de matrice (`TruncatedSVD`) façon Netflix Prize.
+- [x] **Moteur SVD (Facteurs Latents) :** Factorisation de matrice (`TruncatedSVD`) sur la matrice d’engagement.
 
 - [x] **Interface CLI unifiée (`main.py`) :** Un menu interactif pour choisir facilement son moteur et sa métrique.
 
@@ -109,3 +109,30 @@ Python 3.14 · pandas · scikit-learn · scipy · requests · uv (gestion des d�
 ## Licence
 
 MIT
+
+
+## Premier lot de fiabilisation
+
+Le point d'entrée recommandé est `uv run python main.py`. Il récupère la
+bibliothèque actuelle du joueur avant de proposer des jeux non possédés.
+Les jeux possédés à zéro minute sont exclus eux aussi. Une clé Steam valide
+et une bibliothèque accessible sont nécessaires ; une erreur API interrompt
+la recommandation au lieu de supposer que le joueur ne possède aucun jeu.
+Les seuls jeux pouvant être exclus sont ceux accessibles via l'API.
+
+L'ancien CSV reste utilisable : il sert aux préférences, tandis que la liste
+d'exclusion vient de l'API. La prochaine extraction conservera aussi les jeux
+jamais lancés. L'extraction remplace `data/steam_raw_data.csv` : sauvegarder
+l'ancien fichier avant de relancer la collecte si l'on veut le conserver.
+
+Les fonctions de modèles acceptent `owned_games`, une collection d'AppID à
+exclure avant le classement final. Les appels directs sans ce paramètre
+excluent seulement les jeux joués : ils servent notamment à l'évaluation.
+L'évaluation existante n'a pas encore été adaptée à la possession complète ;
+ne pas interpréter ses résultats comme une mesure d'achat futur.
+
+Tests hors ligne : `uv run python -m unittest discover -s tests -v`.
+Les appels réseau sont simulés. Le premier lot a été vérifié sur Python 3.12
+avec les bibliothèques disponibles dans l'environnement de revue, pas avec
+l'environnement verrouillé Python 3.14 du projet. L'API réelle reste à tester
+avec votre clé. Aucun secret n'est fourni.
