@@ -5,27 +5,40 @@ from src.config import DATA_PATH, MON_STEAM_ID, TOP_N
 from src.models.data_utils import prepare_data
 
 
-def get_svd_recommendations(
-    user_id, matrice_interaction, n_factors=20, top_n=5, owned_games=None
-):
-    """
-    Recommande des jeux en utilisant la factorisation de matrice (SVD).
-    """
-    if user_id not in matrice_interaction.index:
-        return []
-
-    # 1. On applique la SVD pour réduire la dimensionnalité (trouver les concepts cachés)
-    svd = TruncatedSVD(n_components=n_factors, random_state=42)
-    matrice_compressee = svd.fit_transform(matrice_interaction)
-
-    # 2. On reconstruit une matrice "idéale" sans les trous (prédiction des notes manquantes)
-    matrice_reconstruite = svd.inverse_transform(matrice_compressee)
-    df_predictions = pd.DataFrame(
-        matrice_reconstruite,
+def fit_svd(matrice_interaction, n_factors=20, random_state=42):
+    """Entraîne une fois et renvoie les scores de tous les utilisateurs."""
+    if n_factors < 1:
+        raise ValueError("n_factors doit être positif")
+    if min(matrice_interaction.shape) == 0:
+        raise ValueError("La matrice est vide")
+    if matrice_interaction.shape[1] == 1:
+        return matrice_interaction.astype(float).copy()
+    svd = TruncatedSVD(
+        n_components=min(n_factors, *matrice_interaction.shape),
+        random_state=random_state,
+    )
+    compressed = svd.fit_transform(matrice_interaction)
+    return pd.DataFrame(
+        svd.inverse_transform(compressed),
         index=matrice_interaction.index,
         columns=matrice_interaction.columns,
     )
 
+
+def get_svd_recommendations(
+    user_id,
+    matrice_interaction,
+    n_factors=20,
+    top_n=5,
+    owned_games=None,
+    predictions=None,
+):
+    """Réutilise les prédictions préentraînées lorsqu'elles sont fournies."""
+    if user_id not in matrice_interaction.index:
+        return []
+    df_predictions = (
+        fit_svd(matrice_interaction, n_factors) if predictions is None else predictions
+    )
     # 3. On isole les prédictions pour notre joueur
     mes_predictions = df_predictions.loc[user_id]
     mes_jeux_actuels = matrice_interaction.loc[user_id]

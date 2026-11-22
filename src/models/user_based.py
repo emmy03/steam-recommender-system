@@ -58,36 +58,54 @@ def get_user_recommendations(
         list: Une liste de tuples (game_id, score_recommandation).
     """
     if user_id not in matrice_interaction.index:
-        print("Utilisateur introuvable dans la base de données.")
+            return []
+
+    neighbors = (
+        df_sim_users[user_id]
+        .drop(user_id)
+        .sort_values(ascending=False)
+    )
+    neighbors = neighbors[neighbors > 0]
+
+    if neighbors.empty:
         return []
 
-    # 1. Isoler les voisins (en s'excluant soi-même)
-    proches = df_sim_users[user_id].drop(user_id).sort_values(ascending=False)
-    voisins_utiles = proches[proches > 0]
+    own = matrice_interaction.loc[user_id]
+    excluded = set(() if owned_games is None else owned_games)
 
-    # 2. Identifier les jeux déjà possédés pour ne pas les recommander
-    mes_jeux = matrice_interaction.loc[user_id]
-    jeux_deja_joues = set(mes_jeux[mes_jeux > 0].index)
-
-    jeux_deja_joues.update(owned_games or ())
-
-    scores_recommandation = {}
-
-    # 3. Calculer les scores basés sur l'influence des voisins
-    for voisin_id, score_similarite in voisins_utiles.items():
-        jeux_du_voisin = matrice_interaction.loc[voisin_id]
-
-        for game_id, playtime in jeux_du_voisin.items():
-            if playtime > 0 and game_id not in jeux_deja_joues:
-                if game_id not in scores_recommandation:
-                    scores_recommandation[game_id] = 0
-
-                scores_recommandation[game_id] += playtime * score_similarite
-
-    top_jeux = sorted(scores_recommandation.items(), key=lambda x: x[1], reverse=True)[
-        :top_n
+    candidates = matrice_interaction.columns[
+        (own <= 0) & ~own.index.isin(excluded)
     ]
-    return top_jeux
+
+    if candidates.empty:
+        return []
+
+    values = matrice_interaction.loc[
+        neighbors.index, candidates
+    ].to_numpy(dtype=float)
+
+    positive = values > 0
+    present = positive.any(axis=0)
+
+    # Préserver l'ordre de première rencontre en cas d'égalité.
+    order = np.argsort(positive.argmax(axis=0), kind="stable")
+    order = order[present[order]]
+
+    scores = np.zeros(len(candidates), dtype=float)
+
+    # Conserver l'ordre des additions de la version précédente.
+    for row, weight in zip(
+        values, neighbors.to_numpy(), strict=True
+    ):
+        scores += np.where(row > 0, row, 0.0) * weight
+
+    ranked = sorted(
+        ((candidates[i], float(scores[i])) for i in order),
+        key=lambda pair: pair[1],
+        reverse=True,
+    )
+
+    return ranked[:top_n]
 
 
 # --- POINT D'ENTREE (TEST LOCAL) ---

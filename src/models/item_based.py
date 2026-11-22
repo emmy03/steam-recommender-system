@@ -57,37 +57,44 @@ def get_item_recommendations(
     Returns:
         list: Une liste de tuples (game_id, score_recommandation).
     """
-    # Vérification de sécurité : le joueur existe-t-il dans notre dataset ?
-    # if user_id not in matrice_interaction.index:
-    # print("Utilisateur introuvable dans la base de données.")
-    # return []
 
     if user_id not in matrice_interaction.index:
+            return []
+
+    own = matrice_interaction.loc[user_id]
+    played = own[own > 0]
+
+    if played.empty:
         return []
-    excluded = set(owned_games or ())
-    mes_jeux = matrice_interaction.loc[user_id]
-    mes_jeux_joues = mes_jeux[mes_jeux > 0]
 
-    scores_recommandation = {}
+    excluded = set(() if owned_games is None else owned_games)
 
-    for game_id, playtime in mes_jeux_joues.items():
-        # Extraction de la ligne de similarité pour le jeu en cours
-        jeux_similaires = df_sim_items[game_id]
-
-        for sim_game_id, score_sim in jeux_similaires.items():
-            # Exclusion des jeux déjà joués et de la similarité du jeu avec lui-même
-            if sim_game_id not in excluded and mes_jeux[sim_game_id] == 0:
-                if sim_game_id not in scores_recommandation:
-                    scores_recommandation[sim_game_id] = 0
-
-                # Pondération du score de similarité par le temps passé sur le jeu source
-                scores_recommandation[sim_game_id] += score_sim * playtime
-
-    # Tri décroissant selon le score final et sélection du Top N
-    top_jeux = sorted(scores_recommandation.items(), key=lambda x: x[1], reverse=True)[
-        :top_n
+    candidate_ids = df_sim_items.index
+    candidate_ids = candidate_ids[
+        (own.reindex(candidate_ids) == 0)
+        & ~candidate_ids.isin(excluded)
     ]
-    return top_jeux
+
+    if candidate_ids.empty:
+        return []
+
+    similarities = df_sim_items.loc[
+        candidate_ids, played.index
+    ].to_numpy(dtype=float)
+
+    scores = np.zeros(len(candidate_ids), dtype=float)
+
+    # Conserver les similarités négatives de Pearson
+    # et l'ordre historique des additions.
+    for column, engagement in enumerate(played.to_numpy()):
+        scores += similarities[:, column] * engagement
+
+    order = np.argsort(-scores, kind="stable")[:top_n]
+
+    return [
+        (candidate_ids[i], float(scores[i]))
+        for i in order
+    ]
 
 
 # --- POINT D'ENTREE (TEST LOCAL) ---
